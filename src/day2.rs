@@ -11,8 +11,10 @@ pub fn part1_solve(data: &String) -> Result<u32> {
         let (_, id) = game_name.split_once(" ").unwrap_or(("", "0"));
         let id = id.parse::<u32>().unwrap_or(0);
 
-        let game_passed = game.split(";").fold(false, |_, round| {
-            let mut passed = true;
+        let game_passed = game.split(";").fold(true, |mut acc, round| {
+            if !acc {
+                return acc;
+            }
 
             let draws = round.trim().split(",").map(|v| {
                 let (num, name) = v.trim().split_once(" ").unwrap_or(("0", ""));
@@ -25,17 +27,14 @@ pub fn part1_solve(data: &String) -> Result<u32> {
                     (num, "green") if num <= &&G => {},
                     (num, "blue") if num <= &&B => {},
                     _ => {
-                        passed = false;
+                        acc = false;
                         break;
                     }
                 };
             }
 
-            return passed;
+            return acc;
         });
-
-        println!("line: {line}");
-        println!("game id: {id}, game passed: {game_passed}");
     
         return match game_passed {
             true => id,
