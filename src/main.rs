@@ -6,7 +6,7 @@ use std::fs;
 use std::path::PathBuf;
 
 fn main() {
-    let data = fs::read_to_string(PathBuf::from("input")).unwrap();
+    let data = fs::read_to_string(PathBuf::from("data/day3")).unwrap();
     let result = day3::part1_solve(&data).unwrap();
 
     //println!("this is the input\n{data}");
