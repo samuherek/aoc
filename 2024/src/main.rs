@@ -1,5 +1,6 @@
 use aoc::aoc_1;
+use aoc::aoc_2;
 
 fn main() {
-    aoc_1::solve();
+    aoc_2::solve();
 }
