@@ -82,6 +82,7 @@ fn part2() {
             values
         })
         .collect::<Vec<_>>();
+    let mut data = vec![vec![34,35,37,39,38,40,45]];
 
     let mut results = 0;
 
