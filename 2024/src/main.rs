@@ -7,7 +7,8 @@ use aoc::aoc_6;
 use aoc::aoc_7;
 use aoc::aoc_8;
 use aoc::aoc_9;
+use aoc::aoc_10;
 
 fn main() {
-    aoc_9::solve();
+    aoc_10::solve();
 }
