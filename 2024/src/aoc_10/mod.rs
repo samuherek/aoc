@@ -131,7 +131,90 @@ fn part1(data: String) -> usize {
 }
 
 fn part2(data: String) -> usize {
-    0
+    let data: Vec<Vec<_>> = data
+        .trim()
+        .lines()
+        .map(|line| line.chars().map(|c| c.to_digit(10).unwrap()).collect())
+        .collect();
+
+    let mut starts = vec![];
+    for (y, line) in data.iter().enumerate() {
+        for (x, point) in line.iter().enumerate() {
+            if *point == 0 {
+                starts.push((x, y));
+            }
+        }
+    }
+
+    fn in_bounds(point: &(i32, i32), data: &Vec<Vec<u32>>) -> bool {
+        let (x, y) = point;
+        let x = *x;
+        let y = *y;
+        x >= 0
+            && (0..data[0].len()).contains(&x.try_into().unwrap())
+            && y >= 0
+            && (0..data.len()).contains(&y.try_into().unwrap())
+    }
+
+    fn increment_of_one(value: u32, point: &(i32, i32), data: &Vec<Vec<u32>>) -> bool {
+        let next_val = data[point.1 as usize][point.0 as usize];
+        next_val <= 9 && value + 1 == next_val
+    }
+
+    fn valid_move(prev_value: u32, point: &(i32, i32), data: &Vec<Vec<u32>>) -> bool {
+        let happy_bounds = in_bounds(point, data);
+        if !happy_bounds {
+            return false;
+        }
+        let happy_increment = increment_of_one(prev_value, point, data);
+        happy_increment
+    }
+
+    fn find_path(point: (i32, i32), data: &Vec<Vec<u32>>, count: &mut usize) -> bool {
+        let (x, y) = point;
+        let value = data[y as usize][x as usize];
+
+        if value == 9 {
+            *count += 1;
+            return true;
+        }
+
+        let top = (x, y - 1);
+        let right = (x + 1, y);
+        let bottom = (x, y + 1);
+        let left = (x - 1, y);
+
+        if valid_move(value, &top, data) {
+            // println!("valid move top");
+            find_path(top, data, count);
+        }
+        if valid_move(value, &right, data) {
+            // println!("valid move right");
+            find_path(right, data, count);
+        }
+        if valid_move(value, &bottom, data) {
+            // println!("valid move bottom");
+            find_path(bottom, data, count);
+        }
+        if valid_move(value, &left, data) {
+            // println!("valid move left");
+            find_path(left, data, count);
+        }
+
+        return false;
+    }
+
+    let result = starts
+        .into_iter()
+        .map(|point| {
+            let mut count = 0;
+            let p = (point.0 as i32, point.1 as i32);
+            find_path(p, &data, &mut count);
+            count
+        })
+        .sum();
+
+    result
 }
 
 pub fn solve() {
@@ -140,6 +223,6 @@ pub fn solve() {
         InputMode::Test => TEXT_INPUT.to_string(),
         InputMode::Source => fs::read_to_string("./src/aoc_10/input.txt").unwrap(),
     };
-    let result = part1(data);
+    let result = part2(data);
     println!("reuslt: {result}");
 }
