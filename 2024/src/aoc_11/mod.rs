@@ -1,5 +1,5 @@
 use crate::utils::InputMode;
-use std::boxed::Box;
+use std::collections::{HashMap, HashSet};
 use std::fs;
 
 const TEXT_INPUT: &str = r#"
@@ -44,8 +44,45 @@ fn part1(data: String) -> usize {
     first.len()
 }
 
-fn part2(data: String) -> usize {
-    0
+fn part2(data: String) -> u64 {
+    let numbers = data
+        .trim()
+        .split_whitespace()
+        .map(|x| x.parse::<u64>().unwrap())
+        .collect::<Vec<_>>();
+
+    let mut state = numbers
+        .into_iter()
+        .map(|x| (x, 1))
+        .collect::<HashMap<u64, u64>>();
+
+    for _ in 0..75 {
+        let mut next_state = HashMap::new();
+
+        for (num, count) in state.iter() {
+            if *num == 0 {
+                *next_state.entry(1).or_insert(0) += count;
+                continue;
+            }
+
+            let digits = (*num as f64).log10().floor() as usize + 1;
+            if digits % 2 == 0 {
+                let half = digits / 2;
+                let power = 10_u64.pow(half as u32);
+                let one = num / power;
+                let two = num % power;
+                *next_state.entry(one).or_insert(0) += count;
+                *next_state.entry(two).or_insert(0) += count;
+                continue;
+            }
+
+            let next = num * 2024;
+            *next_state.entry(next).or_insert(0) += count;
+        }
+        state = next_state;
+    }
+
+    state.iter().map(|(_, v)| v).sum()
 }
 
 pub fn solve() {
@@ -54,6 +91,6 @@ pub fn solve() {
         InputMode::Test => TEXT_INPUT.to_string(),
         InputMode::Source => fs::read_to_string("./src/aoc_11/input.txt").unwrap(),
     };
-    let result = part1(data);
+    let result = part2(data);
     println!("reuslt: {result}");
 }
