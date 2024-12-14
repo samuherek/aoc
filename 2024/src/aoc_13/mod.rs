@@ -33,7 +33,7 @@ impl Move {
     }
 }
 
-#[derive(Debug, Default)]
+#[derive(Debug, Default, PartialEq, Eq)]
 struct Pos(u64, u64);
 impl Pos {
     fn x(&self) -> u64 {
@@ -54,7 +54,7 @@ struct Game {
 const A: u64 = 3;
 const B: u64 = 1;
 
-fn part1(data: String) -> u64 {
+fn parse_games(data: &str) -> Vec<Game> {
     let mut games = vec![];
     let mut game_buf = Game::default();
 
@@ -100,8 +100,12 @@ fn part1(data: String) -> u64 {
             game_buf.prize = Pos(x, y);
         }
     }
+    games.push(game_buf);
+    games
+}
 
-    println!("games: {games:?}");
+fn part1(data: String) -> u64 {
+    let games = parse_games(&data);
     let mut total = 0;
 
     for game in games {
@@ -113,8 +117,6 @@ fn part1(data: String) -> u64 {
                 if end_x == game.prize.x() && end_y == game.prize.y() {
                     let res = a_count * A + b_count * B;
                     min_cost = min_cost.min(res);
-                    println!("game won: a: {a_count} b: {b_count}");
-                    println!("cost {res}");
                 }
             }
         }
@@ -127,8 +129,45 @@ fn part1(data: String) -> u64 {
     total
 }
 
-fn part2(data: String) -> usize {
-    0
+fn part2(data: String) -> i64 {
+    let games = parse_games(&data);
+
+    // px = ax * m + bx * n
+    // py = ay * m + by * n
+    //
+    // m = (px - bx * n) / ax
+    // m = (py - by * n) / ay
+    //
+    // (px - bx * n) / ax = (py - by * n) / ay
+    //
+    // ay * (px - bx * n) = ax * (py - by * n)
+    //
+    // ay * px - ay * bx * n = ax * py - ax * by * n
+    // ay * px - ay * bx * n + ax * by * n = ax * py
+    // - ay * bx * n + ax * by * n = ax * py - ay * px
+    // n (ax * by - ay * bx) = ax * py - ay * px
+    //
+    // n = ax * py - ay * px / ax * by - ay * bx
+    //
+    let mut total = 0;
+
+    for game in games {
+        let ax = game.button_a.x() as i64;
+        let ay = game.button_a.y() as i64;
+        let bx = game.button_b.x() as i64;
+        let by = game.button_b.y() as i64;
+        let px = game.prize.x() as i64 + 10_000_000_000_000;
+        let py = game.prize.y() as i64 + 10_000_000_000_000;
+
+        let n = (ax * py - ay * px) / (ax * by - ay * bx);
+        let m = (px - bx * n) / ax;
+
+        if px == ax * m + bx * n && py == ay * m + by * n {
+            total += 3 * m + n;
+        }
+    }
+
+    total
 }
 
 pub fn solve() {
@@ -137,6 +176,6 @@ pub fn solve() {
         InputMode::Test => TEXT_INPUT.to_string(),
         InputMode::Source => fs::read_to_string("./src/aoc_13/input.txt").unwrap(),
     };
-    let result = part1(data);
+    let result = part2(data);
     println!("reuslt: {result}");
 }
