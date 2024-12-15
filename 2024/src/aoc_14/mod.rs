@@ -107,6 +107,8 @@ fn part1(data: String) -> u64 {
 }
 
 fn part2(data: String) -> i64 {
+    println!("NOOOOP. I wouldn't have figured it out");
+
     0
 }
 
@@ -116,6 +118,6 @@ pub fn solve() {
         InputMode::Test => TEXT_INPUT.to_string(),
         InputMode::Source => fs::read_to_string("./src/aoc_14/input.txt").unwrap(),
     };
-    let result = part1(data);
+    let result = part2(data);
     println!("reuslt: {result}");
 }
