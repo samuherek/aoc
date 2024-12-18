@@ -107,6 +107,15 @@ impl Direction {
             Direction::Left => Direction::Top,
         }
     }
+
+    fn flip(&self) -> Self {
+        match self {
+            Direction::Top => Direction::Bottom,
+            Direction::Right => Direction::Left,
+            Direction::Bottom => Direction::Top,
+            Direction::Left => Direction::Right,
+        }
+    }
 }
 
 #[derive(Debug)]
@@ -144,7 +153,13 @@ impl Game {
     //    1    2
     //     \
     //      2
-    fn find_path(&self) -> (Vec<(i32, i32, Direction)>, usize) {
+    fn find_path(
+        &self,
+    ) -> (
+        Vec<(i32, i32, Direction)>,
+        usize,
+        HashMap<(i32, i32, Direction), usize>,
+    ) {
         let mut states = HashMap::<(i32, i32, Direction), usize>::new();
         let mut path = HashMap::<(i32, i32, Direction), (i32, i32, Direction)>::new();
         let mut heap = BinaryHeap::new();
@@ -171,11 +186,12 @@ impl Game {
             if self.finish == node_pos {
                 let mut res = vec![];
                 let mut reference = &(node.x, node.y, node.dir);
+                println!("path len:: {}", path.len());
                 while let Some(t) = path.get(reference) {
                     res.push(t.clone());
                     reference = t;
                 }
-                return (res, node.cost);
+                return (res, node.cost, states);
             }
 
             // - get straight. If curr state would be lower:
@@ -244,7 +260,82 @@ impl Game {
             }
         }
 
-        (vec![], 0)
+        (vec![], 0, HashMap::new())
+    }
+
+    fn dijkstras(
+        &self,
+        initial: &[(i32, i32, Direction)],
+    ) -> HashMap<(i32, i32, Direction), usize> {
+        let mut states = HashMap::new();
+        let mut heap = BinaryHeap::new();
+
+        for state in initial {
+            heap.push(Node {
+                x: state.0,
+                y: state.1,
+                dir: state.2.clone(),
+                cost: 0,
+            });
+            states.insert((state.0, state.1, state.2.clone()), 0);
+        }
+
+        while let Some(node) = heap.pop() {
+            let curr_state = (node.x, node.y, node.dir.clone());
+            // If we have found a better path before, skip
+            if states.get(&curr_state).unwrap_or(&usize::MAX) < &node.cost {
+                continue;
+            }
+
+            let s = node.dir.next_coords((node.x, node.y));
+            let s_ref = (s.0, s.1, node.dir.clone());
+            if !self.walls.contains(&s) {
+                let next_cost = node.cost + 1;
+
+                if &next_cost < states.get(&s_ref).unwrap_or(&usize::MAX) {
+                    states.insert(s_ref, next_cost);
+
+                    heap.push(Node {
+                        x: s.0,
+                        y: s.1,
+                        cost: next_cost,
+                        dir: node.dir.clone(),
+                    });
+                }
+            }
+
+            let l = node.dir.left();
+            let l_ref = (node.x, node.y, l.clone());
+            let next_cost = node.cost + 1000;
+
+            if &next_cost < states.get(&l_ref).unwrap_or(&usize::MAX) {
+                states.insert(l_ref, next_cost);
+
+                heap.push(Node {
+                    x: node.x,
+                    y: node.y,
+                    cost: next_cost,
+                    dir: l,
+                });
+            }
+
+            let r = node.dir.right();
+            let r_ref = (node.x, node.y, r.clone());
+            let next_cost = node.cost + 1000;
+
+            if &next_cost < states.get(&r_ref).unwrap_or(&usize::MAX) {
+                states.insert(r_ref, next_cost);
+
+                heap.push(Node {
+                    x: node.x,
+                    y: node.y,
+                    cost: next_cost,
+                    dir: r,
+                });
+            }
+        }
+
+        states
     }
 }
 
@@ -304,16 +395,63 @@ fn part1(data: String) -> usize {
     let mut game = parse(&data);
     println!("{game}");
 
-    let (path, cost) = game.find_path();
+    let (path, cost, states) = game.find_path();
     game.path = path;
 
     println!("{game}");
+    let mut st = vec![vec!["....".to_string(); game.width as usize]; game.height as usize];
+    for ((x, y, _), c) in states {
+        st[y as usize][x as usize] = format!("{:0>4}", c);
+    }
+    for l in &st {
+        println!("{}", l.join(" "));
+    }
+    println!("");
 
     cost
 }
 
-fn part2(data: String) -> i32 {
-    0
+fn part2(data: String) -> usize {
+    let mut game = parse(&data);
+    println!("{game}");
+
+    let start = game.dijkstras(&vec![(game.person.0, game.person.1, game.person.2.clone())]);
+    let end_dirs = vec![
+        (game.finish.0, game.finish.1, Direction::Top),
+        (game.finish.0, game.finish.1, Direction::Right),
+        (game.finish.0, game.finish.1, Direction::Bottom),
+        (game.finish.0, game.finish.1, Direction::Left),
+    ];
+    let end = game.dijkstras(&end_dirs);
+
+    let min_finish = end_dirs
+        .iter()
+        .filter_map(|point| start.get(point))
+        .min()
+        .unwrap_or(&usize::MAX);
+
+    let mut overlap = HashSet::new();
+
+    for (point, cost) in &start {
+        let b_cost = match end.get(&(point.0, point.1, point.2.flip())) {
+            Some(v) => v,
+            None => continue,
+        };
+        if *cost + *b_cost == *min_finish {
+            overlap.insert((point.0, point.1));
+        }
+    }
+
+    let mut st = vec![vec!['.'; game.width as usize]; game.height as usize];
+    for (x, y) in &overlap {
+        st[(*y) as usize][(*x) as usize] = 'O';
+    }
+    for l in &st {
+        println!("{}", l.iter().collect::<String>());
+    }
+    println!("");
+
+    overlap.len()
 }
 
 pub fn solve() {
@@ -322,6 +460,6 @@ pub fn solve() {
         InputMode::Test => TEXT_INPUT_2.to_string(),
         InputMode::Source => fs::read_to_string("./src/aoc_16/input.txt").unwrap(),
     };
-    let result = part1(data);
+    let result = part2(data);
     println!("reuslt: {result}");
 }
