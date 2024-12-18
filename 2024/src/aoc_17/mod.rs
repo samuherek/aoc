@@ -9,7 +9,15 @@ Register C: 0
 Program: 0,1,5,4,3,0
 "#;
 
-#[derive(Debug)]
+const TEXT_INPUT_2: &str = r#"
+Register A: 2024
+Register B: 0
+Register C: 0
+
+Program: 0,3,5,4,3,0
+"#;
+
+#[derive(Debug, Clone)]
 struct Computer {
     a: i64,
     b: i64,
@@ -163,16 +171,38 @@ fn part1(data: String) -> String {
         .join(",")
 }
 
-fn part2(data: String) -> usize {
-    0
+fn part2(data: String) -> i64 {
+    let computer = parse(&data);
+    //println!("{computer:?}");
+
+    let mut i = 10000000000000;
+    let mut found = false;
+    while !found {
+        let mut c = computer.clone();
+        c.a = i;
+
+        while c.output.len() < c.program.len() && !c.halted {
+            c.step();
+        }
+        if i % 1000000 == 0 {
+            println!("{i}: {c:?}");
+        }
+        if c.output == c.program {
+            found = true;
+            break;
+        }
+        i += 1;
+    }
+
+    i
 }
 
 pub fn solve() {
     let mode = InputMode::Source;
     let data = match mode {
-        InputMode::Test => TEXT_INPUT.to_string(),
+        InputMode::Test => TEXT_INPUT_2.to_string(),
         InputMode::Source => fs::read_to_string("./src/aoc_17/input.txt").unwrap(),
     };
-    let result = part1(data);
+    let result = part2(data);
     println!("reuslt: {result}");
 }
